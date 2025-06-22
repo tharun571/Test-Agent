@@ -137,3 +137,68 @@ coverage:
 - [ ] Add support for other AI models (OpenAI, Anthropic, etc.)
 - [ ] Implement a web-based UI for test generation
 - [ ] Add support for CI/CD integration (GitHub Actions, GitLab CI, etc.)
+
+## Example Usage
+
+> **Example Project**: This tool is demonstrated using the [django-crud-ajax-login-register-fileupload](https://github.com/gowthamand/django-crud-ajax-login-register-fileupload) repository.
+
+Here's an example of using the Test Agent to analyze a Django project and generate tests:
+
+```bash
+PS D:\SaaS\Test Agent> test-agent analyze --path ../app/app
+C:\Users\athar\anaconda3\Lib\site-packages\paramiko\transport.py:219: CryptographyDeprecationWarning: Blowfish has been deprecated and will be removed in a future release
+  "class": algorithms.Blowfish,
+Package pytest-django not found. Attempting to install...
+Package django-widget-tweaks not found. Attempting to install...
+Package python-dotenv not found. Attempting to install...
+🔍 Django Test Authoring Agent
+Analyzing project structure...
+
+2025-06-22 23:07:59 [info     ] analyse_start                  project=D:\SaaS\app\app
+✓ Django project detected!
+    Project Summary    
+┏━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Metric      ┃ Count ┃
+┡━━━━━━━━━━━━━╇━━━━━━━┩
+│ Apps        │ 2     │
+│ Model files │ 4     │
+│ View files  │ 18    │
+│ URL files   │ 28    │
+└─────────────┴───────┘
+🎯 28 Testable Endpoints found
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━┓
+┃ URL                  ┃ View              ┃ App  ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━┩
+│                      │ views.index       │ crud │
+│ create               │ views.create      │ crud │
+│ list                 │ views.list        │ crud │
+│ fileupload           │ views.fileupload  │ crud │
+│ edit/<int:id>        │ views.edit        │ crud │
+│ edit/update/<int:id> │ views.update      │ crud │
+│ delete/<int:id>      │ views.delete      │ crud │
+│ ajax/                │ views.ajax        │ crud │
+│ ajax/ajax            │ views.ajax        │ crud │
+│ ajax/delete          │ views.ajax_delete │ crud │
+└──────────────────────┴───────────────────┴──────┘
+... and 18 more
+
+Would you like to generate tests? [y/n]: y
+
+🧪 Interactive Test Generation Session
+
+Enter test specification ('help' for commands): generate a failing test case for create under views.create
+🤖 Generating test...
+2025-06-22 23:08:53 [info     ] llm_generation                 prompt_length=16290 response_length=9181
+
+✅ Generated Test:
+import pytest
+from django.urls import reverse
+from crud.models import Member
+from django.contrib.auth import get_user_model
+from django.conf import settings
+import datetime
+
+# [Previous test code continues...]
+```
+
+This example shows the Test Agent analyzing a Django project, discovering testable endpoints, and generating failing test cases for the create view. The tool automatically installs missing dependencies and provides an interactive interface for test generation and execution.
