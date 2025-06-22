@@ -1,0 +1,30 @@
+# Test Authoring Agent – Phase 1 dependencies
+
+# Core
+click==8.1.7
+rich==13.7.0
+python-dotenv==1.0.0
+
+# LLM
+google-generativeai==0.3.2
+
+# Code Analysis
+ast-comments==1.0.0
+astunparse==1.6.3
+
+# Django Testing
+django==4.2.9
+pytest==7.4.4
+pytest-django==4.7.0
+coverage==7.4.0
+
+# Git Operations
+GitPython==3.1.41
+
+# Sandboxing
+docker==7.0.0
+
+# Utilities
+pydantic==2.5.3
+structlog==24.1.0
+tenacity==8.2.3

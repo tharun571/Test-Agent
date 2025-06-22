@@ -1,0 +1,10 @@
+.env
+
+#ignore all pycache
+__pycache__
+
+#ignore phase files
+phase1.md
+phase2.md
+phase3.md
+project-outline.md

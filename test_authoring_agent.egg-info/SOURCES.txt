@@ -1,0 +1,13 @@
+setup.py
+agent/__init__.py
+agent/llm_client.py
+analyzer/__init__.py
+analyzer/django_analyzer.py
+cli/__init__.py
+cli/main.py
+test_authoring_agent.egg-info/PKG-INFO
+test_authoring_agent.egg-info/SOURCES.txt
+test_authoring_agent.egg-info/dependency_links.txt
+test_authoring_agent.egg-info/entry_points.txt
+test_authoring_agent.egg-info/top_level.txt
+utils/__init__.py
