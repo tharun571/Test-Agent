@@ -87,11 +87,9 @@ def analyze(path: str, repo: str | None):
         ep_table.add_column("URL")
         ep_table.add_column("View")
         ep_table.add_column("App")
-        for ep in results["testable_endpoints"][:10]:
+        for ep in results["testable_endpoints"]:
             ep_table.add_row(ep["url"], ep["view"], ep["app"])
         console.print(ep_table)
-        if len(results["testable_endpoints"]) > 10:
-            console.print(f"[dim]... and {len(results['testable_endpoints']) - 10} more[/dim]")
 
     cache = {"path": path, "results": results}
     console.print()

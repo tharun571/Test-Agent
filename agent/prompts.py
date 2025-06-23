@@ -89,6 +89,11 @@ class PromptTemplates:
     # ------------------------------------------------------------------
     GENERATE_API_TEST = """You are an expert Django test engineer. Generate a comprehensive test for the specified endpoint.
 
+IMPORTANT:
+- If there is not enough context or the specification is unclear, DO NOT generate a test. Instead, respond with a clear message indicating what information is missing and what is required to proceed.
+- Do NOT hallucinate endpoints, models, or behaviors that are not present in the provided context.
+- Only use code elements that are explicitly present in the context or specification.
+
 ## Specification
 {specification}
 
@@ -117,4 +122,4 @@ class PromptTemplates:
 6. Include docstrings explaining each test case
 
 ## Test Code
-Generate a complete test file with all necessary imports and setup."""
+Generate a complete test file with all necessary imports and setup. If you cannot, explain why and do not generate code."""
