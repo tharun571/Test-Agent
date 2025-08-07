@@ -191,15 +191,16 @@ class TestRunner:
         Returns:
             Path to the created test file
         """
+        # Create a unique subdirectory for the test run
+        test_run_dir = self.temp_dir / f"{test_name}_{int(time.time())}"
+        test_run_dir.mkdir(parents=True, exist_ok=True)
+
         # Create a safe filename from the test name
         safe_name = "".join(c if c.isalnum() else "_" for c in test_name)
         safe_name = safe_name.strip("_")
         
         # Create the test file
-        test_file = self.temp_dir / f"test_{safe_name}_{int(time.time())}.py"
-        
-        # Ensure the directory exists
-        test_file.parent.mkdir(parents=True, exist_ok=True)
+        test_file = test_run_dir / f"test_{safe_name}.py"
         
         # Write the test code to the file
         with open(test_file, 'w', encoding='utf-8') as f:
@@ -355,8 +356,8 @@ class TestRunner:
                 )
             finally:
                 # Clean up temporary files
-                if test_file.exists():
-                    test_file.unlink()
+                if test_file and test_file.parent.exists():
+                    shutil.rmtree(test_file.parent)
                 
                 # Clean up coverage files
                 for ext in ['.coverage', '.coverage.*', 'coverage.xml', 'htmlcov']:

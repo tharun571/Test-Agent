@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
 import tempfile
 import asyncio
+import os
 
 from runner.test_runner import TestRunner, TestResult
 
@@ -57,6 +58,22 @@ class TestTestRunner(unittest.TestCase):
         
         self.assertEqual(mock_run_locally.call_count, 2)
         self.assertTrue(result.success)
+
+    @patch('runner.test_runner.TestRunner._run_locally', new_callable=AsyncMock)
+    def test_cleanup(self, mock_run_locally):
+        # Mock a successful test result
+        mock_run_locally.return_value = TestResult(success=True, output="")
+        
+        runner = TestRunner(str(self.project_root), use_sandbox=False)
+        
+        # Run the test
+        async def run():
+            return await runner.run_test("import os")
+            
+        result = asyncio.run(run())
+        
+        # Check that the temporary directory is cleaned up
+        self.assertFalse(os.path.exists(Path(result.test_file).parent))
 
 if __name__ == '__main__':
     unittest.main()
