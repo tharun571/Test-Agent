@@ -6,6 +6,7 @@ import json
 import subprocess
 import importlib.util
 import logging
+import ast
 from typing import List, Dict, Any, Optional, Union, Tuple
 
 # Configure logging
@@ -266,80 +267,106 @@ class TestRunner:
         
         return ''  # Return empty string if not found
     
+    def validate_test(self, test_code: str) -> Optional[str]:
+        """Validate the test code for basic syntax errors."""
+        try:
+            ast.parse(test_code)
+            return None
+        except SyntaxError as e:
+            return f"Syntax error in generated test: {e}"
+
     async def run_test(
         self,
         test_code: str,
         test_name: str = "generated_test",
         with_coverage: bool = False,
+        retries: int = 3,
     ) -> TestResult:
-        """Run a single test with optional coverage
+        """Run a single test with optional coverage and retries.
         
         Args:
             test_code: Python test code to execute
             test_name: Name for the test (used for reporting)
             with_coverage: Whether to collect coverage data
+            retries: Number of times to retry a failed test
             
         Returns:
             TestResult with execution results
         """
-        start_time = time.time()
-        test_file = self._create_test_file(test_code, test_name)
-        
-        try:
-            if self.use_sandbox and self.sandbox:
-                result = await self._run_in_sandbox(test_file, test_name, with_coverage)
-                result.execution_mode = "sandbox"
-            else:
-                result = await self._run_locally(test_file, test_name, with_coverage)
-                result.execution_mode = "local"
+        validation_error = self.validate_test(test_code)
+        if validation_error:
+            return TestResult(
+                success=False,
+                output="",
+                error=validation_error,
+                test_name=test_name,
+            )
+
+        for attempt in range(retries):
+            start_time = time.time()
+            test_file = self._create_test_file(test_code, f"{test_name}_attempt_{attempt}")
             
-            result.duration = time.time() - start_time
-            result.test_file = str(test_file)
-            
-            # Analyze errors if test failed
-            if not result.success and result.error:
-                analyzer = TestErrorAnalyzer(test_code, result.error)
-                result.error_analysis = analyzer.analyze()
+            try:
+                if self.use_sandbox and self.sandbox:
+                    result = await self._run_in_sandbox(test_file, test_name, with_coverage)
+                    result.execution_mode = "sandbox"
+                else:
+                    result = await self._run_locally(test_file, test_name, with_coverage)
+                    result.execution_mode = "local"
                 
-                # Suggest fixes for common issues
-                if result.error_analysis and result.error_analysis.error_type == 'import_error':
-                    result.error_analysis.suggested_fix = self._suggest_import_fix(
-                        result.error_analysis.error_message
-                    )
-            
-            return result
-            
-        except asyncio.TimeoutError:
-            return TestResult(
-                success=False,
-                output="",
-                error=f"Test timed out after {self.timeout} seconds",
-                duration=time.time() - start_time,
-                test_name=test_name,
-                execution_mode="sandbox" if (self.use_sandbox and self.sandbox) else "local"
-            )
-        except Exception as e:
-            logger.exception("Test execution failed")
-            return TestResult(
-                success=False,
-                output="",
-                error=f"Test execution failed: {str(e)}",
-                duration=time.time() - start_time,
-                test_name=test_name,
-                execution_mode="sandbox" if (self.use_sandbox and self.sandbox) else "local"
-            )
-        finally:
-            # Clean up temporary files
-            if test_file.exists():
-                test_file.unlink()
-            
-            # Clean up coverage files
-            for ext in ['.coverage', '.coverage.*', 'coverage.xml', 'htmlcov']:
-                for f in self.project_path.glob(f'**/{ext}'):
-                    if f.is_file():
-                        f.unlink()
-                    elif f.is_dir():
-                        shutil.rmtree(f, ignore_errors=True)
+                result.duration = time.time() - start_time
+                result.test_file = str(test_file)
+                
+                # Analyze errors if test failed
+                if not result.success and result.error:
+                    analyzer = TestErrorAnalyzer(test_code, result.error)
+                    result.error_analysis = analyzer.analyze()
+                    
+                    # Suggest fixes for common issues
+                    if result.error_analysis and result.error_analysis.error_type == 'import_error':
+                        result.error_analysis.suggested_fix = self._suggest_import_fix(
+                            result.error_analysis.error_message
+                        )
+                
+                if result.success:
+                    return result
+
+                logger.info(f"Test failed on attempt {attempt + 1}/{retries}. Retrying in 2 seconds...")
+                await asyncio.sleep(2)
+
+            except asyncio.TimeoutError:
+                return TestResult(
+                    success=False,
+                    output="",
+                    error=f"Test timed out after {self.timeout} seconds",
+                    duration=time.time() - start_time,
+                    test_name=test_name,
+                    execution_mode="sandbox" if (self.use_sandbox and self.sandbox) else "local"
+                )
+            except Exception as e:
+                logger.exception("Test execution failed")
+                return TestResult(
+                    success=False,
+                    output="",
+                    error=f"Test execution failed: {str(e)}",
+                    duration=time.time() - start_time,
+                    test_name=test_name,
+                    execution_mode="sandbox" if (self.use_sandbox and self.sandbox) else "local"
+                )
+            finally:
+                # Clean up temporary files
+                if test_file.exists():
+                    test_file.unlink()
+                
+                # Clean up coverage files
+                for ext in ['.coverage', '.coverage.*', 'coverage.xml', 'htmlcov']:
+                    for f in self.project_path.glob(f'**/{ext}'):
+                        if f.is_file():
+                            f.unlink()
+                        elif f.is_dir():
+                            shutil.rmtree(f, ignore_errors=True)
+        
+        return result # Return the last result after all retries
     
     async def _run_in_sandbox(
         self, test_file: Path, test_name: str, with_coverage: bool = False
