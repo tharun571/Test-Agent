@@ -16,11 +16,11 @@ logger = structlog.get_logger()
 class SandboxConfig:
     """Configuration for sandbox environment"""
     image: str = "python:3.11-slim"
-    memory_limit: str = "512m"
-    cpu_limit: float = 1.0
-    timeout: int = 30
-    network_disabled: bool = False
-    read_only_root: bool = True
+    memory_limit: str = "256m"
+    cpu_limit: float = 0.5
+    timeout: int = 60
+    network_disabled: bool = True
+    read_only_project_mount: bool = True
     django_settings: Optional[str] = None
 
 @dataclass
@@ -120,7 +120,7 @@ class DockerSandbox:
         return len(issues) == 0, "\n".join(issues)
     
     def _prepare_test_archive(self, test_code: str, test_name: str) -> bytes:
-        """Prepare tar archive with test and project files"""
+        """Prepare tar archive with test and runner scripts."""
         tar_buffer = io.BytesIO()
         
         with tarfile.open(fileobj=tar_buffer, mode='w:gz') as tar:
@@ -146,9 +146,6 @@ class DockerSandbox:
             req_info.mtime = time.time()
             tar.addfile(req_info, io.BytesIO(requirements.encode()))
             
-            # Add project files (read-only mount would be better for large projects)
-            self._add_project_files(tar)
-        
         tar_buffer.seek(0)
         return tar_buffer.read()
     
@@ -189,8 +186,9 @@ import unittest
 import sys
 from pathlib import Path
 
-# Add project to path
-sys.path.insert(0, str(Path(__file__).parent.absolute()))
+# Add project and test directories to path
+sys.path.insert(0, '/app')
+sys.path.insert(0, '/tmp')
 
 # Import test module
 from tests.{test_name} import *
@@ -221,26 +219,33 @@ factory-boy>=3.2.0
     
     def _create_container(self, test_archive: bytes) -> docker.models.containers.Container:
         """Create and configure Docker container"""
+        
+        volumes = {
+            str(self.project_path): {
+                'bind': '/app',
+                'mode': 'ro' if self.config.read_only_project_mount else 'rw'
+            }
+        }
+
         container = self.client.containers.create(
             image=self.config.image,
-            command=["/app/run_tests.py"],
+            command=["/tmp/run_tests.py"],
             working_dir="/app",
             mem_limit=self.config.memory_limit,
             cpu_quota=int(self.config.cpu_limit * 100000),
             network_disabled=self.config.network_disabled,
-            read_only=self.config.read_only_root,
+            read_only=True, # Make the container's root filesystem read-only
+            tmpfs={'/tmp': 'rw,size=64M'}, # Add a writable tmpfs for test files
             environment={
                 'PYTHONUNBUFFERED': '1',
                 'PYTHONDONTWRITEBYTECODE': '1',
                 'PYTHONPATH': '/app'
             },
-            volumes={
-                '/app': {'bind': '/app', 'mode': 'rw'}
-            }
+            volumes=volumes
         )
         
-        # Copy test files to container
-        container.put_archive("/", test_archive)
+        # Copy test files to the writable /tmp directory
+        container.put_archive("/tmp", test_archive)
         return container
     
     def _execute_test(self, container) -> SandboxResult:
