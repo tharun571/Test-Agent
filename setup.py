@@ -12,5 +12,5 @@ setup(
             'test-agent=cli.main:cli',
         ],
     },
-    python_requires='>=3.11',
+    python_requires='>=3.10',
 )

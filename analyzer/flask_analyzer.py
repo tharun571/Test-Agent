@@ -36,6 +36,7 @@ class FlaskAnalyzer(BaseAnalyzer):
             self._parse_file(file_path, "app")
 
         logger.info("Analysis complete.")
+        return {"routes": self.routes}
 
     def _parse_file(self, file_path: Path, category: str):
         """Read and AST-parse a single file."""
@@ -55,12 +56,20 @@ class FlaskAnalyzer(BaseAnalyzer):
                     if (isinstance(decorator, ast.Call) and
                             isinstance(decorator.func, ast.Attribute) and
                             decorator.func.attr == 'route'):
+                        
+                        methods = ["GET"]  # Default method
                         if decorator.args:
                             route_path = self._get_node_value(decorator.args[0])
+                            
+                            # Extract methods from keyword arguments
+                            for keyword in decorator.keywords:
+                                if keyword.arg == "methods":
+                                    methods = [self._get_node_value(m) for m in keyword.value.elts]
+
                             routes.append({
                                 "path": route_path,
                                 "function": node.name,
-                                "methods": ["GET"]  # Default, can be improved
+                                "methods": methods
                             })
         return routes
 

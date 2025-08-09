@@ -48,6 +48,14 @@ class DjangoAnalyzer(BaseAnalyzer):
             self._parse_file(file_path, "serializers")
 
         logger.info("Analysis complete.")
+        return {
+            "apps": list(self.apps),
+            "models": self.models,
+            "views": self.views,
+            "urls": self.urls,
+            "serializers": self.serializers,
+            "testable_endpoints": self._extract_testable_endpoints(),
+        }
 
     def _parse_file(self, file_path: Path, category: str):
         """Read and AST-parse a single file."""

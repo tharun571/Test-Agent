@@ -1,4 +1,5 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: test-authoring-agent
 Version: 0.1.0
-Requires-Python: >=3.11
+Requires-Python: >=3.10
+Dynamic: requires-python

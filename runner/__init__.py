@@ -7,7 +7,14 @@ with features like Docker sandboxing, error analysis, and rich output formatting
 
 from .sandbox import DockerSandbox, SandboxConfig, SandboxResult
 from .error_analyzer import TestErrorAnalyzer, ErrorAnalysis
-from .test_runner import TestRunner, TestResult, run_test_interactive, run_tests_from_spec
+from .test_runner import (
+    BaseTestRunner,
+    DjangoTestRunner,
+    PytestTestRunner,
+    NodeTestRunner,
+    TestResult,
+    run_test_interactive,
+)
 
 __all__ = [
     'DockerSandbox',
@@ -15,10 +22,12 @@ __all__ = [
     'SandboxResult',
     'TestErrorAnalyzer',
     'ErrorAnalysis',
-    'TestRunner',
+    'BaseTestRunner',
+    'DjangoTestRunner',
+    'PytestTestRunner',
+    'NodeTestRunner',
     'TestResult',
     'run_test_interactive',
-    'run_tests_from_spec',
 ]
 
 __version__ = '0.1.0'
